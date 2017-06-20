@@ -13,15 +13,15 @@ import scala.concurrent.Future
 
 
 // domain model
-case class Hour(time: Double, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
-case class Hourly(data: Seq[Hour])
+case class Observation(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
+case class Hourly(data: Seq[Observation])
 case class HistoryResponse(hourly: Hourly)
 
 case class Location(lat: Double, lon: Double)
 
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val hour = jsonFormat5(Hour)
+  implicit val observation = jsonFormat5(Observation)
   implicit val hourly = jsonFormat1(Hourly)
   implicit val historyResponse = jsonFormat1(HistoryResponse)
 }
@@ -43,6 +43,7 @@ class DarkSkyClient(apiKey: String) extends JsonSupport {
 
   private val endpoint = "https://api.darksky.net"
   private val exclude = Seq("currently", "flags", "daily")
+  private val units = "si"
 
   /**
     * A Time Machine Request returns the observed (in the past) or forecasted (in the future)
@@ -57,6 +58,7 @@ class DarkSkyClient(apiKey: String) extends JsonSupport {
   }
 
   private def createUri(location: Location, time: Long) = {
-    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$time?exclude=${exclude.mkString(",")}"
+    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$time" +
+      s"?exclude=${exclude.mkString(",")}&units=$units"
   }
 }
