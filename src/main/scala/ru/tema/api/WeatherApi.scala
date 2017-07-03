@@ -14,7 +14,7 @@ import scala.concurrent.Future
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
-case class Day(observation: Seq[Observation], dayStats: DayStats)
+case class Day(observations: Seq[Observation], dayStats: DayStats)
 
 case class WeatherApiResponse(days: Seq[Day], overallStats: DetailedStats)
 
@@ -68,7 +68,6 @@ class WeatherApi(darkSkyClient: DarkSkyClient) {
 
 
   // time
-  // TODO: Date is deprecated
   private def endOfTheDay(date: LocalDate): Long = {
     ZonedDateTime
       .of(date.getYear, date.getMonthValue, date.getDayOfMonth, 23, 59, 59, 0, ZoneOffset.UTC)
