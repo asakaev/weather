@@ -9,8 +9,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import ru.tema.api.{ WeatherApi, WeatherApiResponse }
+import ru.tema.api.{ WeatherApiResponse, WeatherService }
 import ru.tema.darksky.{ DarkSkyClient, Location }
+import ru.tema.stats.StatsCalc
 
 import scala.concurrent.Future
 
@@ -21,7 +22,8 @@ object Application extends App {
 
   val apiKey = "90ed629753ab611b3c77e053ba8584df"
   val darkSkyClient = new DarkSkyClient(apiKey)
-  val weatherApi = new WeatherApi(darkSkyClient)
+  val statsCalc = new StatsCalc
+  val weatherApi = new WeatherService(darkSkyClient, statsCalc)
 
   def getObservations(lat: Double, lon: Double, date: String, days: Int): Future[WeatherApiResponse] = {
     val parsedDate = time(date)
