@@ -1,4 +1,4 @@
-package ru.tema.api
+package ru.tema.weather
 
 import java.time.{ LocalDate, ZoneOffset, ZonedDateTime }
 

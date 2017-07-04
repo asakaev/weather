@@ -9,9 +9,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import ru.tema.api.{ WeatherApiResponse, WeatherService }
 import ru.tema.darksky.{ DarkSkyClient, Location }
 import ru.tema.stats.StatsCalc
+import ru.tema.weather.{ WeatherApiResponse, WeatherService }
 
 import scala.concurrent.Future
 
