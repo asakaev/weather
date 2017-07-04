@@ -24,12 +24,13 @@ case class DayNightHours(dayHours: Seq[Observation], nightHours: Seq[Observation
 
 
 // draft
-class WeatherService(darkSkyClient: DarkSkyClient, sc: StatsCalc) {
+class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
 
   def getHistory(location: Location, fromTime: LocalDate, days: Int): Future[WeatherApiResponse] = {
     val endOfTheDayTimestamp = endOfTheDay(fromTime)
     println(s"endOfTheDay: $endOfTheDayTimestamp")
 
+    // TODO: days for UI?
     val timestamps = timestampsSeq(endOfTheDayTimestamp, days)
     println(s"timestamps: $timestamps")
 
@@ -45,7 +46,7 @@ class WeatherService(darkSkyClient: DarkSkyClient, sc: StatsCalc) {
 
 
   private def stats(series: Seq[Double]): Stats = {
-    Stats(sc.stdDev(series), sc.median(series), sc.min(series), sc.max(series))
+    Stats(statsCalc.stdDev(series), statsCalc.median(series), series.min, series.max)
   }
 
   private def detailedStats(observations: Seq[Observation]): DetailedStats = {
