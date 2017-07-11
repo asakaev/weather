@@ -3,7 +3,13 @@ package ru.tema.stats
 import java.lang.Math.sqrt
 
 
-class StatsCalc {
+trait StatsCalc {
+  def stdDev(xs: Seq[Double]): Double
+  def median(xs: Seq[Double]): Double
+}
+
+
+object StatsCalc extends StatsCalc {
 
   def stdDev(xs: Seq[Double]): Double = {
     require(xs.nonEmpty)
