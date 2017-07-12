@@ -1,55 +1,43 @@
 package ru.tema
 
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import ru.tema.darksky.{ DarkSkyClient, Location }
+import com.typesafe.config.ConfigFactory
+import ru.tema.api.RestApi
+import ru.tema.darksky.DarkSkyClient
 import ru.tema.stats.StatsCalc
-import ru.tema.weather.{ WeatherApiResponse, WeatherService }
-
-import scala.concurrent.Future
+import ru.tema.weather.WeatherService
 
 
 object Application extends App {
   implicit val system = ActorSystem("my-system")
   implicit val materializer = ActorMaterializer()
 
-  val apiKey = "90ed629753ab611b3c77e053ba8584df"
+  val conf = ConfigFactory.load
+  val apiKey = conf.getString("dark-sky.api-key")
+  val host = conf.getString("web-server.host")
+  val port = conf.getInt("web-server.port")
+
   val darkSkyClient = new DarkSkyClient(apiKey)
-  val statsCalc = new StatsCalc
-  val weatherApi = new WeatherService(darkSkyClient, statsCalc)
-
-  def getObservations(lat: Double, lon: Double, date: String, days: Int): Future[WeatherApiResponse] = {
-    val parsedDate = time(date)
-    println(s"parsed date: $parsedDate")
-    weatherApi.getHistory(Location(lat, lon), parsedDate, days)
-  }
-
-  private def time(str: String): LocalDate = {
-    val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-    LocalDate.parse(str, formatter)
-  }
+  val weatherService = new WeatherService(darkSkyClient, StatsCalc)
+  val restApi = new RestApi(weatherService)
 
   val route: Route =
     get {
-      path("gethistory") {
+      path("history") {
         parameters('lat.as[Double], 'lon.as[Double], 'date.as[String], 'days.as[Int]) { (lat, lon, date, days) =>
-          println(s"lan: $lat, lon: $lon, date: $date, days: $days")
-
-          val observations: Future[WeatherApiResponse] = getObservations(lat, lon, date, days)
-
-          onSuccess(observations) { obs =>
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, obs.toString))
+          println(s"lat: $lat, lon: $lon, date: $date, days: $days")
+          val historyFuture = restApi.history(lat, lon, date, days)
+          onSuccess(historyFuture) { response =>
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, response.toString))
           }
         }
       }
     }
 
-  Http().bindAndHandle(route, "localhost", 8080)
+  Http().bindAndHandle(route, host, port)
 }
