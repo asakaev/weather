@@ -15,17 +15,17 @@ import scala.concurrent.Future
 
 
 // domain model
-case class Observation(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
-case class Hourly(data: Seq[Observation]) // 00:00 to 23:00
-case class HistoryResponse(hourly: Hourly, timezone: String, offset: Int) // TODO: TZ or offset remove?
+case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
+case class DataBlock(data: Seq[DataPoint]) // 00:00 to 23:00
+case class Response(hourly: DataBlock, timezone: String)
 
 case class Location(lat: Double, lon: Double)
 
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val observation = jsonFormat5(Observation)
-  implicit val hourly = jsonFormat1(Hourly)
-  implicit val historyResponse = jsonFormat3(HistoryResponse)
+  implicit val dataPoint5 = jsonFormat5(DataPoint)
+  implicit val dataBlock1 = jsonFormat1(DataBlock)
+  implicit val response2 = jsonFormat2(Response)
 }
 
 
@@ -55,11 +55,13 @@ class DarkSkyClient(apiKey: String) extends JsonSupport {
     * @param time UNIX time (timezone should be omitted to refer to local time for the location being requested)
     * @return
     */
-  def history(location: Location, time: LocalDateTime): Future[HistoryResponse] = {
-    val uri = createUri(location, epochTime(time))
+  def history(location: Location, time: LocalDateTime): Future[Response] = {
+    val epoch = epochTime(time)
+    println(s"epoch request: $epoch")
+    val uri = createUri(location, epoch)
     for {
       response <- Http().singleRequest(HttpRequest(uri = uri))
-      historyResponse <- Unmarshal(response.entity).to[HistoryResponse]
+      historyResponse <- Unmarshal(response.entity).to[Response]
     } yield historyResponse
   }
 
