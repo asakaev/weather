@@ -2,15 +2,23 @@ package ru.tema
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import ru.tema.darksky.DarkSkyClient
+import ru.tema.darksky.{ DarkSkyClient, Location }
 import ru.tema.repository.CitiesRepo
 import ru.tema.stats.StatsCalc
-import ru.tema.weather.{ PublicApi, WeatherService }
+import ru.tema.weather.{ City, PublicApi, WeatherService }
+import spray.json.DefaultJsonProtocol
+
+
+object MyJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
+  implicit val locationFormat = jsonFormat2(Location.apply)
+  implicit val cityFormat = jsonFormat2(City.apply)
+}
 
 
 object Application extends App {
@@ -28,7 +36,8 @@ object Application extends App {
     new CitiesRepo
   )
 
-  // TODO: JSON response
+  import MyJsonProtocol._
+
   val route: Route =
     get {
       path("locations") {
@@ -37,7 +46,7 @@ object Application extends App {
           println(s"cities: $citiesSeq")
           val locationsFuture = publicApi.locations(citiesSeq)
           onSuccess(locationsFuture) { locations =>
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, locations.toString))
+            complete(locations)
           }
         }
       } ~
@@ -46,6 +55,7 @@ object Application extends App {
           println(s"lat: $lat, lon: $lon, date: $date, days: $days")
           val historyFuture = publicApi.history(lat, lon, date, days)
           onSuccess(historyFuture) { response =>
+            // TODO: JSON response
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, response.toString))
           }
         }
