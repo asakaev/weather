@@ -9,13 +9,16 @@ import ru.tema.repository.CitiesRepo
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+case class City(title: String, location: Location)
 
-class PublicApi(weatherService: WeatherService, citiesRepo: CitiesRepo) {
+
+class PublicApi(weatherService: WeatherService, repo: CitiesRepo) {
   private val inputPattern = "dd-MM-yyyy"
   private val inputFormatter = DateTimeFormatter.ofPattern(inputPattern)
 
-  def locations(cities: Seq[String]): Future[Seq[Location]] = {
-    val futures = cities.map(citiesRepo.location)
+  def locations(cities: Seq[String]): Future[Seq[City]] = {
+    def toCity(title: String) = repo.location(title).map(_.map(loc => City(title, loc)))
+    val futures = cities.map(toCity)
     Future.sequence(futures).map(_.flatten)
   }
 
@@ -26,5 +29,4 @@ class PublicApi(weatherService: WeatherService, citiesRepo: CitiesRepo) {
   }
 
   private def parseTime(input: String) = LocalDate.parse(input, inputFormatter)
-
 }
