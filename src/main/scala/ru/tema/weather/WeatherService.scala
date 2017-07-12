@@ -1,8 +1,8 @@
 package ru.tema.weather
 
-import java.time.{ LocalDate, ZoneOffset, ZonedDateTime }
+import java.time._
 
-import ru.tema.darksky.{ DarkSkyClient, Location, Observation }
+import ru.tema.darksky.{ DarkSkyClient, DataPoint, Location }
 import ru.tema.stats.StatsCalc
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,54 +15,57 @@ import scala.concurrent.Future
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
-case class Day(observations: Seq[Observation], dayStats: DayStats)
+case class Day(zonedDateTime: ZonedDateTime, observations: Seq[DataPoint], dayStats: DayStats)
 
-case class WeatherApiResponse(days: Seq[Day], overallStats: DetailedStats)
+case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
+
+case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
 
 
-case class DayNightHours(dayHours: Seq[Observation], nightHours: Seq[Observation])
-
-
-// draft
+// TODO: draft!
 class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
 
-  def getHistory(location: Location, fromTime: LocalDate, days: Int): Future[WeatherApiResponse] = {
-    val endOfTheDayTimestamp = endOfTheDay(fromTime)
-    println(s"endOfTheDay: $endOfTheDayTimestamp")
+  def getHistory(location: Location, fromTime: LocalDate, days: Int): Future[HistoryResponse] = {
+    val localDateTimes = localDateTimeSeq(fromTime, days)
+    println(s"localDateTimes: $localDateTimes")
 
-    // TODO: days for UI?
-    val timestamps = timestampsSeq(endOfTheDayTimestamp, days)
-    println(s"timestamps: $timestamps")
-
-    val futures = timestamps.map(ts => darkSkyClient.history(location, ts).map(_.hourly.data))
+    val futures = localDateTimes.map(ldt => darkSkyClient.history(location, ldt))
     for {
-      daysObservations <- Future.sequence(futures)
+      historyResponses <- Future.sequence(futures)
     } yield {
-      val daysResult = daysObservations.map(obs => Day(obs, dayStats(obs)))
-      val allObservations = daysObservations.flatten
-      WeatherApiResponse(daysResult, detailedStats(allObservations))
+      val daysResult = historyResponses.map(response => {
+        val dataPoints = response.hourly.data
+        val dataPoint = dataPoints.head // TODO: exception!
+        val zdt = zonedDateTime(dataPoint.time, response.timezone) // TODO: time is wrong here. ONE point only
+        Day(zdt, dataPoints, dayStats(dataPoints))
+      })
+
+      val dataPoints = historyResponses.flatMap(_.hourly.data)
+      val sorted = dataPoints.sortBy(_.time)
+      println(s"DataPoints before stats: $dataPoints")
+      println(s"DataPoints before stats sorted: $sorted")
+      HistoryResponse(daysResult, detailedStats(dataPoints))
     }
   }
-
 
   private def stats(series: Seq[Double]): Stats = {
     Stats(statsCalc.stdDev(series), statsCalc.median(series), series.min, series.max)
   }
 
-  private def detailedStats(observations: Seq[Observation]): DetailedStats = {
-    val temp = observations.map(_.temperature)
-    val humidity = observations.map(_.humidity)
-    val windSpeed = observations.map(_.windSpeed)
-    val windBearing = observations.map(_.windBearing)
+  private def detailedStats(dataPoints: Seq[DataPoint]): DetailedStats = {
+    val temp = dataPoints.map(_.temperature)
+    val humidity = dataPoints.map(_.humidity)
+    val windSpeed = dataPoints.map(_.windSpeed)
+    val windBearing = dataPoints.map(_.windBearing)
     DetailedStats(stats(temp), stats(humidity), stats(windSpeed), stats(windBearing))
   }
 
-  private def dayStats(observations: Seq[Observation]): DayStats = {
+  private def dayStats(observations: Seq[DataPoint]): DayStats = {
     val hours = splitDayNightHours(observations)
     DayStats(detailedStats(observations), detailedStats(hours.dayHours), detailedStats(hours.nightHours))
   }
 
-  private def splitDayNightHours(observations: Seq[Observation]) = {
+  private def splitDayNightHours(observations: Seq[DataPoint]) = {
     require(observations.length == 24)
     val buckets = observations.sortBy(_.time).grouped(6).toList
     val night = buckets(0)
@@ -72,18 +75,14 @@ class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
     DayNightHours(morning ++ afternoon, night ++ evening)
   }
 
-
-  // time
-  private def endOfTheDay(date: LocalDate): Long = {
-    ZonedDateTime
-      .of(date.getYear, date.getMonthValue, date.getDayOfMonth, 23, 59, 59, 0, ZoneOffset.UTC)
-      .toEpochSecond
+  private def localDateTimeSeq(fromTime: LocalDate, days: Int): Seq[LocalDateTime] = {
+    (0 until days)
+      .map(x => fromTime.minusDays(x))
+      .map(ld => LocalDateTime.of(ld, LocalTime.of(0, 0)))
   }
 
-  // TODO: fix and test
-  private def timestampsSeq(fromTime: Long, days: Int): Seq[Long] = {
-    val day = 24 * 60 * 60 * 1000
-    0 until days map (x => fromTime - x * day)
+  private def zonedDateTime(time: Long, timezone: String): ZonedDateTime = {
+    Instant.ofEpochMilli(time).atZone(ZoneId.of(timezone))
   }
 
 }
