@@ -22,10 +22,10 @@ class PublicApi(weatherService: WeatherService, repo: CitiesRepo) {
     Future.sequence(futures).map(_.flatten)
   }
 
-  def history(lat: Double, lon: Double, date: String, days: Int): Future[HistoryResponse] = {
+  def history(location: Location, date: String, days: Int): Future[HistoryResponse] = {
     val localDate = parseTime(date)
     println(s"parsed local date: $localDate")
-    weatherService.getHistory(Location(lat, lon), localDate, days)
+    weatherService.getHistory(location, localDate, days)
   }
 
   private def parseTime(input: String) = LocalDate.parse(input, inputFormatter)

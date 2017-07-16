@@ -34,19 +34,22 @@ class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
   }
 
   private def createResponse(historyResponses: Seq[Response]) = {
-    val daysResult = historyResponses.map(response => {
+    def toDay(response: Response) = {
       val dataPoints = response.hourly.data
-      val dataPoint = dataPoints.head
-      val zdt = zonedDateTime(dataPoint.time, response.timezone) // TODO: unsafe
-      Day(zdt, dataPoints, dayStats(dataPoints))
-    })
+      val dataPoint = dataPoints.head // TODO: unsafe
+      Day(
+        zonedDateTime(dataPoint.time, response.timezone),
+        dataPoints,
+        dayStats(dataPoints)
+      )
+    }
 
     val allDataPoints = historyResponses.flatMap(_.hourly.data).sortBy(_.time)
     println(s"> All DataPoints: $allDataPoints")
     val stats = detailedStats(allDataPoints)
-    println(s"> stats: $stats")
-    
-    HistoryResponse(daysResult, detailedStats(allDataPoints))
+    println(s"> DetailedStats: $stats")
+
+    HistoryResponse(historyResponses.map(toDay), stats)
   }
 
   private def stats(series: Seq[Double]): Stats = {

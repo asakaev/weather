@@ -38,7 +38,7 @@ class WebServer(host: String, port: Int, publicApi: PublicApi) {
         path("history") {
           parameters('lat.as[Double], 'lon.as[Double], 'date.as[String], 'days.as[Int]) { (lat, lon, date, days) =>
             println(s"lat: $lat, lon: $lon, date: $date, days: $days")
-            val historyFuture = publicApi.history(lat, lon, date, days)
+            val historyFuture = publicApi.history(Location(lat, lon), date, days)
             onSuccess(historyFuture) { response =>
               // TODO: JSON response
               complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, response.toString))
