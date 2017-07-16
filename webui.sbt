@@ -2,6 +2,13 @@ lazy val webUI = (project in file("web-ui"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
     scalaVersion := "2.12.2",
-    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.1",
-    scalaJSUseMainModuleInitializer := true
+    scalaJSUseMainModuleInitializer := true,
+    skip in packageJSDependencies := false,
+    jsDependencies ++= Seq(
+      "org.webjars" % "jquery" % "2.1.4" / "2.1.4/jquery.js"
+    ),
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.1",
+      "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
+    )
   )
