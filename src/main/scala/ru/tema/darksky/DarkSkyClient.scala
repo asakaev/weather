@@ -56,17 +56,20 @@ class DarkSkyClient(apiKey: String) extends JsonSupport {
     * @return
     */
   def history(location: Location, time: LocalDateTime): Future[Response] = {
-    val epoch = epochTime(time)
-    println(s"epoch request: $epoch")
-    val uri = createUri(location, epoch)
+    val epochSecond = epochTime(time)
+    println(s"epoch request: $epochSecond")
+    val uri = createUri(location, epochSecond)
     for {
       response <- Http().singleRequest(HttpRequest(uri = uri))
       historyResponse <- Unmarshal(response.entity).to[Response]
-    } yield historyResponse
+    } yield {
+      require(historyResponse.hourly.data.length == 24, "should be 24 data points per day")
+      historyResponse
+    }
   }
 
-  private def createUri(location: Location, unixTime: Long) = {
-    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$unixTime" +
+  private def createUri(location: Location, epochSecond: Long) = {
+    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$epochSecond" +
       s"?exclude=${exclude.mkString(",")}&units=$units"
   }
 
