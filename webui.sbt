@@ -12,6 +12,7 @@ lazy val webUI = (project in file("web-ui"))
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1",
       "be.doeraene" %%% "scalajs-jquery" % "0.9.1",
-      "com.lihaoyi" %%% "upickle" % "0.4.4"
+      "com.lihaoyi" %%% "upickle" % "0.4.4",
+      "org.scala-js" %%% "scalajs-java-time" % "0.2.2"
     )
   )
