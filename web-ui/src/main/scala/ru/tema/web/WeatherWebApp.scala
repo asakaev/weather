@@ -1,46 +1,38 @@
 package ru.tema.web
 
-import org.scalajs.dom.ext.Ajax
 import org.scalajs.jquery.jQuery
-import upickle.default._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-
-case class Location(lat: Double, lon: Double)
-case class City(title: String, location: Location)
 
 
 object WeatherWebApp {
 
+  val weatherApiClient = new WeatherApiClient
+
   def setupUI(): Unit = {
-//    jQuery("body").append("<p>Weather WebApp</p>")
-    jQuery("#locations-button").click(() => onLocations())
+    jQuery("#locations-button").click(() => onLocationsBtn())
   }
 
-  def onLocations(): Unit = {
-    val response = Ajax.get(
-      url = "http://localhost:8080/locations?city=Saint-Petersburg&city=Moscow"
-    )
+  def onLocationsBtn(): Unit = {
+    val locations = Seq("Saint-Petersburg", "Moscow") // TODO: get list from anywhere
 
-    // TODO: check status 200 else Throw
-    response.map(res => {
-      res.status match {
-        case 200 =>
-          println(s"response status: ${res.status}")
-          val contentString = res.responseText
-          println(contentString)
-          val cities = read[Seq[City]](contentString)
-          println(cities)
-          jQuery("body").append(s"<p>$cities</p>")
-        case _ =>
-          println("boo1")
-      }
-    })
+    val result = for {
+      cities <- weatherApiClient.locations(locations)
+    } yield {
+      jQuery("body").append(s"<p>$cities</p>")
+    }
+
+    result.recover {
+      case e: Throwable =>
+        e.printStackTrace()
+        jQuery("body").append(s"<p>ERROR: ${e.getMessage}</p>")
+    }
   }
 
 
   def main(args: Array[String]): Unit = {
-    println("WeatherWebApp logs")
+    println("WeatherWebApp is up and running")
+    setupUI()
     jQuery(() => setupUI())
   }
 }
