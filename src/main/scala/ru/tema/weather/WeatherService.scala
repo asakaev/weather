@@ -2,7 +2,7 @@ package ru.tema.weather
 
 import java.time._
 
-import ru.tema.darksky.{ DarkSkyClient, DataPoint, Location }
+import ru.tema.darksky.{ DarkSkyClient, DataPoint, Location, Response }
 import ru.tema.stats.StatsCalc
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,14 +15,12 @@ import scala.concurrent.Future
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
-case class Day(zonedDateTime: ZonedDateTime, observations: Seq[DataPoint], dayStats: DayStats)
-
-case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
+case class Day(zonedDateTime: ZonedDateTime, dataPoints: Seq[DataPoint], dayStats: DayStats)
 
 case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
+case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
 
 
-// TODO: draft!
 class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
 
   def getHistory(location: Location, fromTime: LocalDate, days: Int): Future[HistoryResponse] = {
@@ -32,20 +30,23 @@ class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
     val futures = localDateTimes.map(ldt => darkSkyClient.history(location, ldt))
     for {
       historyResponses <- Future.sequence(futures)
-    } yield {
-      val daysResult = historyResponses.map(response => {
-        val dataPoints = response.hourly.data
-        val dataPoint = dataPoints.head // TODO: exception!
-        val zdt = zonedDateTime(dataPoint.time, response.timezone) // TODO: time is wrong here. ONE point only
-        Day(zdt, dataPoints, dayStats(dataPoints))
-      })
+    } yield createResponse(historyResponses)
+  }
 
-      val dataPoints = historyResponses.flatMap(_.hourly.data)
-      val sorted = dataPoints.sortBy(_.time)
-      println(s"DataPoints before stats: $dataPoints")
-      println(s"DataPoints before stats sorted: $sorted")
-      HistoryResponse(daysResult, detailedStats(dataPoints))
-    }
+  private def createResponse(historyResponses: Seq[Response]) = {
+    val daysResult = historyResponses.map(response => {
+      val dataPoints = response.hourly.data
+      val dataPoint = dataPoints.head
+      val zdt = zonedDateTime(dataPoint.time, response.timezone) // TODO: unsafe
+      Day(zdt, dataPoints, dayStats(dataPoints))
+    })
+
+    val allDataPoints = historyResponses.flatMap(_.hourly.data).sortBy(_.time)
+    println(s"> All DataPoints: $allDataPoints")
+    val stats = detailedStats(allDataPoints)
+    println(s"> stats: $stats")
+    
+    HistoryResponse(daysResult, detailedStats(allDataPoints))
   }
 
   private def stats(series: Seq[Double]): Stats = {
@@ -60,14 +61,14 @@ class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
     DetailedStats(stats(temp), stats(humidity), stats(windSpeed), stats(windBearing))
   }
 
-  private def dayStats(observations: Seq[DataPoint]): DayStats = {
-    val hours = splitDayNightHours(observations)
-    DayStats(detailedStats(observations), detailedStats(hours.dayHours), detailedStats(hours.nightHours))
+  private def dayStats(dataPoints: Seq[DataPoint]): DayStats = {
+    val hours = splitDayNightHours(dataPoints)
+    DayStats(detailedStats(dataPoints), detailedStats(hours.dayHours), detailedStats(hours.nightHours))
   }
 
-  private def splitDayNightHours(observations: Seq[DataPoint]) = {
-    require(observations.length == 24)
-    val buckets = observations.sortBy(_.time).grouped(6).toList
+  private def splitDayNightHours(dataPoints: Seq[DataPoint]) = {
+    require(dataPoints.length == 24)
+    val buckets = dataPoints.sortBy(_.time).grouped(6).toList
     val night = buckets(0)
     val morning = buckets(1)
     val afternoon = buckets(2)
@@ -81,8 +82,8 @@ class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
       .map(ld => LocalDateTime.of(ld, LocalTime.of(0, 0)))
   }
 
-  private def zonedDateTime(time: Long, timezone: String): ZonedDateTime = {
-    Instant.ofEpochMilli(time).atZone(ZoneId.of(timezone))
+  private def zonedDateTime(epochSecond: Long, zoneId: String): ZonedDateTime = {
+    Instant.ofEpochSecond(epochSecond).atZone(ZoneId.of(zoneId))
   }
 
 }
