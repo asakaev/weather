@@ -7,6 +7,7 @@ lazy val weather = (project in file("."))
       "com.typesafe.akka" %% "akka-http" % "10.0.7",
       "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.6",
       "org.scalactic" %% "scalactic" % "3.0.1",
-      "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+      "ch.megard" %% "akka-http-cors" % "0.2.1"
     )
   )

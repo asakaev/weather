@@ -7,6 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 import ru.tema.darksky.Location
 import spray.json.DefaultJsonProtocol
 
@@ -24,27 +25,29 @@ class WebServer(host: String, port: Int, publicApi: PublicApi) {
   import MyJsonProtocol._
 
   val route: Route =
-    get {
-      path("locations") {
-        parameters('city.*) { (cities) =>
-          val citiesSeq = cities.toSeq
-          println(s"cities: $citiesSeq")
-          val locationsFuture = publicApi.locations(citiesSeq)
-          onSuccess(locationsFuture) { locations =>
-            complete(locations)
-          }
-        }
-      } ~
-        path("history") {
-          parameters('lat.as[Double], 'lon.as[Double], 'date.as[String], 'days.as[Int]) { (lat, lon, date, days) =>
-            println(s"lat: $lat, lon: $lon, date: $date, days: $days")
-            val historyFuture = publicApi.history(Location(lat, lon), date, days)
-            onSuccess(historyFuture) { response =>
-              // TODO: JSON response
-              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, response.toString))
+    cors() {
+      get {
+        path("locations") {
+          parameters('city.*) { (cities) =>
+            val citiesSeq = cities.toSeq
+            println(s"cities: $citiesSeq")
+            val locationsFuture = publicApi.locations(citiesSeq)
+            onSuccess(locationsFuture) { locations =>
+              complete(locations)
             }
           }
-        }
+        } ~
+          path("history") {
+            parameters('lat.as[Double], 'lon.as[Double], 'date.as[String], 'days.as[Int]) { (lat, lon, date, days) =>
+              println(s"lat: $lat, lon: $lon, date: $date, days: $days")
+              val historyFuture = publicApi.history(Location(lat, lon), date, days)
+              onSuccess(historyFuture) { response =>
+                // TODO: JSON response
+                complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, response.toString))
+              }
+            }
+          }
+      }
     }
 
   Http().bindAndHandle(route, host, port)
