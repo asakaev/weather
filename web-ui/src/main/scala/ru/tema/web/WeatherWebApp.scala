@@ -9,26 +9,27 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 object WeatherWebApp {
 
-  val weatherApiClient = new WeatherApiClient
+  private val endpoint = "http://localhost:8080"
+  private val weatherApiClient = new WeatherApiClient(endpoint)
 
   // TODO: hardcode
-  private val locations = Seq("Saint-Petersburg", "Moscow")
+  private val cities = Seq("Saint-Petersburg", "Moscow")
   private val localDate = LocalDate.of(2017, 6, 16)
 
 
   def setupUI(): Unit = {
+    jQuery("body").append(s"<p>Cities: ${cities.mkString(", ")}</p>")
+    jQuery("body").append(s"<p>Date: $localDate</p>")
+    jQuery("body").append("""<button id="locations-button" type="button">Locations</button>""")
     jQuery("#locations-button").click(() => onLocationsBtn())
   }
 
   def onLocationsBtn(): Unit = {
-    jQuery("body").append(s"<p>Locations for $locations</p>")
-    println(s"date: $localDate")
-
     val result = for {
-      cities <- weatherApiClient.locations(locations)
-      results <- weatherApiClient.history(cities.map(_.location), localDate, 1)
+      citiesWithLocation <- weatherApiClient.locations(cities)
+      results <- weatherApiClient.history(citiesWithLocation.map(_.location), localDate, 1)
     } yield {
-      jQuery("body").append(s"<p>$cities</p>")
+      jQuery("body").append(s"<p>$citiesWithLocation</p>")
     }
 
     result.recover {
@@ -41,7 +42,6 @@ object WeatherWebApp {
 
   def main(args: Array[String]): Unit = {
     println("WeatherWebApp is up and running")
-    setupUI()
     jQuery(() => setupUI())
   }
 }

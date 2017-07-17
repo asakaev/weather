@@ -13,9 +13,7 @@ case class Location(lat: Double, lon: Double)
 case class City(title: String, location: Location)
 
 
-class WeatherApiClient {
-
-  private val endpoint = "http://localhost:8080"
+class WeatherApiClient(endpoint: String) {
 
   def locations(cities: Seq[String]): Future[Seq[City]] = {
     val query = cities.map(c => s"city=$c").mkString("&")
@@ -25,8 +23,8 @@ class WeatherApiClient {
   }
 
   // TODO: change return type
-  def history(locs: Seq[Location], date: LocalDate, days: Int): Future[Seq[String]] = {
-    val futures = locs.map(l => historyForLocation(l, date, days))
+  def history(locations: Seq[Location], date: LocalDate, days: Int): Future[Seq[String]] = {
+    val futures = locations.map(l => historyForLocation(l, date, days))
     Future.sequence(futures)
   }
 
