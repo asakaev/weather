@@ -9,8 +9,24 @@ import upickle.default.read
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+// TODO: domain model leak
+//case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
+case class DataPoint(temperature: Double) // Long type problem
+// hack
+
+// TODO: share
 case class Location(lat: Double, lon: Double)
 case class City(title: String, location: Location)
+
+// TODO: share2
+
+//case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
+//case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
+//case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
+case class Day(dataPoints: Seq[DataPoint]) // POW: zonedDateTime: ZonedDateTime,  dayStats: DayStats
+
+//case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
+case class HistoryResponse(days: Seq[Day]) // POW! -> overallStats: DetailedStats
 
 
 class WeatherApiClient(endpoint: String) {
@@ -22,17 +38,20 @@ class WeatherApiClient(endpoint: String) {
       .map(res => read[Seq[City]](res.responseText))
   }
 
-  // TODO: change return type
-  def history(locations: Seq[Location], date: LocalDate, days: Int): Future[Seq[String]] = {
+  def history(locations: Seq[Location], date: LocalDate, days: Int): Future[Seq[HistoryResponse]] = {
     val futures = locations.map(l => historyForLocation(l, date, days))
     Future.sequence(futures)
   }
 
-  private def historyForLocation(location: Location, date: LocalDate, days: Int): Future[String] = {
+  private def historyForLocation(location: Location, date: LocalDate, days: Int): Future[HistoryResponse] = {
     val query = s"lat=${location.lat}&lon=${location.lon}&date=${formatDate(date)}&days=$days"
     Ajax.get(s"$endpoint/history?$query")
       .map(validateResponse)
-      .map(res => res.responseText) // TODO: parse response
+      .map(res => {
+        println(s"RESULT: ${res.responseText}")
+        res
+      })
+      .map(res => read[HistoryResponse](res.responseText))
   }
 
   private def validateResponse(response: XMLHttpRequest): XMLHttpRequest = {

@@ -1,6 +1,6 @@
 package ru.tema.web
 
-import java.time.LocalDate
+import java.time.{ LocalDate, ZonedDateTime }
 
 import org.scalajs.jquery.jQuery
 
@@ -27,9 +27,12 @@ object WeatherWebApp {
   def onLocationsBtn(): Unit = {
     val result = for {
       citiesWithLocation <- weatherApiClient.locations(cities)
-      results <- weatherApiClient.history(citiesWithLocation.map(_.location), localDate, 1)
+      results <- {
+        jQuery("body").append(s"<p>$citiesWithLocation</p>")
+        weatherApiClient.history(citiesWithLocation.map(_.location), localDate, 1)
+      }
     } yield {
-      jQuery("body").append(s"<p>$citiesWithLocation</p>")
+      jQuery("body").append(s"<p>$results</p>")
     }
 
     result.recover {
