@@ -24,6 +24,13 @@ object WeatherWebApp {
     jQuery("#locations-btn").click(() => onLocationsBtn())
   }
 
+  def handleResults(results: Seq[HistoryResponse]) = {
+    val day1 = results.head.days.flatMap(_.dataPoints)
+    val day2 = results.last.days.flatMap(_.dataPoints)
+    jQuery("body").append(s"<p>Day1: $day1</p>")
+    jQuery("body").append(s"<p>Day2: $day2</p>")
+  }
+
   def onLocationsBtn(): Unit = {
     val result = for {
       citiesWithLocation <- weatherApiClient.locations(cities)
@@ -33,7 +40,8 @@ object WeatherWebApp {
         weatherApiClient.history(locations, localDate, 1)
       }
     } yield {
-      jQuery("body").append(s"<p>$results</p>")
+      handleResults(results)
+      Unit
     }
 
     result.recover {
