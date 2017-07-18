@@ -69,7 +69,8 @@ object WeatherWebApp {
     val width = 600 - margin.left - margin.right
     val height = 270 - margin.top - margin.bottom
 
-//    val parseDate = d3.time.format("%d-%b-%y").parse(_)
+    // val parseDate = d3.time.format("%d-%b-%y").parse(_)
+    // .map(epoch => new js.Date(epoch))
 
     val x = d3.time.scale().range(js.Array(0, width))
     val y = d3.scale.linear().range(js.Array(height, 0))
@@ -80,7 +81,7 @@ object WeatherWebApp {
       .orient("left").ticks(5)
 
     val valueline = d3.svg.line[DataPoint]()
-      .x { (d: DataPoint) => x(d.time) }
+      .x { (d: DataPoint) => x(d.time * 1000) } // hack
       .y { (d: DataPoint) => y(d.temperature) }
 
     val svg = d3.select("body")
@@ -101,37 +102,58 @@ object WeatherWebApp {
 
     val locations = cities.map(_.location)
     val date = LocalDate.of(2017, 6, 17)
+    val days = 1
 
-    val eventualHistoryResponses = weatherApiClient.history(locations, date, 1)
+    val eventualHistoryResponses = weatherApiClient.history(locations, date, days)
 
     eventualHistoryResponses.onComplete {
       case Failure(e) => println(e)
       case Success(historyResponses) =>
         println("------------------")
         println(historyResponses)
-        val history = historyResponses.head // TODO: warn
-        val dataPoints: Seq[DataPoint] = history.days.flatMap(_.dataPoints)
 
-        val dates = dataPoints.map(_.time) // .map(epoch => new js.Date(epoch))
+        // for each
+        val city1 = historyResponses.head // TODO: warn
+        val city2 = historyResponses.last // TODO: warn
+
+        val dataPoints1: Seq[DataPoint] = city1.days.flatMap(_.dataPoints)
+        val dataPoints2: Seq[DataPoint] = city2.days.flatMap(_.dataPoints)
+
+        // calc scale
+        val allDataPoints = historyResponses.flatMap(_.days).flatMap(_.dataPoints)
+        val dates = allDataPoints.map(_.time)
         println(s"dates: $dates")
-        val minX = new js.Date(dates.min)
-        val maxX = new js.Date(dates.max)
-        val datesRange = js.Array(minX, maxX)
+
+        val datesRange = Seq(dates.min, dates.max)
+          .map(_ * 1000)
+          .map(new js.Date(_))
+          .toJSArray
+
         println(s">>>>>>>> datesRange: $datesRange")
         x.domain(datesRange)
 
-        val temps = dataPoints.map(_.temperature)
+        val temps = allDataPoints.map(_.temperature)
         val maxY = temps.max
         val tempsRange = js.Array(0, maxY)
         println(s">>>>>>>> tempsRange: $tempsRange")
         y.domain(tempsRange)
 
 
-        val jsDataPoints: js.Array[DataPoint] = dataPoints.toJSArray
-
+        // city 1
         svg.append("path")
           .attr("class", "line")
-          .datum(jsDataPoints)  // This is needed to reference the actual data
+          .datum(dataPoints1.toJSArray)  // This is needed to reference the actual data
+          .attr("d", valueline)
+
+
+        // city 2
+
+
+
+        // city 2
+        svg.append("path")
+          .attr("class", "line")
+          .datum(dataPoints2.toJSArray)  // This is needed to reference the actual data
           .attr("d", valueline)
 
         svg.append("g")
