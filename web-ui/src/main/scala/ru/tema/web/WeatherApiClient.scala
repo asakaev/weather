@@ -12,23 +12,20 @@ import scala.concurrent.Future
 
 
 // TODO: domain model leak
-//case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
-case class DataPoint(time: Long, temperature: Double) // Long type problem
-// hack
+case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
 
 // TODO: share
 case class Location(lat: Double, lon: Double)
 case class City(title: String, location: Location)
 
 // TODO: share2
+case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
+case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
+case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
+case class Day(dataPoints: Seq[DataPoint], dayStats: DayStats) // zonedDateTime: ZonedDateTime
 
-//case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
-//case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
-//case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
-case class Day(dataPoints: Seq[DataPoint]) // POW: zonedDateTime: ZonedDateTime,  dayStats: DayStats
-
-//case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
-case class HistoryResponse(days: Seq[Day]) // POW! -> overallStats: DetailedStats
+case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
+case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
 
 
 class WeatherApiClient(endpoint: String) {
