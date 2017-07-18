@@ -51,10 +51,6 @@ class WeatherApiClient(endpoint: String) {
     val query = s"lat=${location.lat}&lon=${location.lon}&date=${formatDate(date)}&days=$days"
     Ajax.get(s"$endpoint/history?$query")
       .map(validateResponse)
-      .map(res => {
-        println(s"RESULT: ${res.responseText}")
-        res
-      })
       .map(_.responseText)
       .map(parseJson)
   }
