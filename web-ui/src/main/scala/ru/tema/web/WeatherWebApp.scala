@@ -30,11 +30,12 @@ object WeatherWebApp {
     drawD3()
   }
 
-  def handleResults(results: Seq[HistoryResponse]) = {
+  def handleResults(results: Seq[HistoryResponse]): Unit = {
     val day1 = results.head.days.flatMap(_.dataPoints)
     val day2 = results.last.days.flatMap(_.dataPoints)
     jQuery("body").append(s"<p>Day1: $day1</p>")
     jQuery("body").append(s"<p>Day2: $day2</p>")
+    Unit
   }
 
   def onLocationsBtn(): Unit = {
@@ -142,20 +143,16 @@ object WeatherWebApp {
         // city 1
         svg.append("path")
           .attr("class", "line")
-          .datum(dataPoints1.toJSArray)  // This is needed to reference the actual data
+          .datum(dataPoints1.toJSArray) // This is needed to reference the actual data
           .attr("d", valueline)
-
-
-        // city 2
-
-
 
         // city 2
         svg.append("path")
           .attr("class", "line")
-          .datum(dataPoints2.toJSArray)  // This is needed to reference the actual data
+          .datum(dataPoints2.toJSArray)
           .attr("d", valueline)
 
+        // axes
         svg.append("g")
           .attr("class", "x axis")
           .attr("transform", "translate(0," + height + ")")
