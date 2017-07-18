@@ -49,7 +49,7 @@ class WeatherApiClient(endpoint: String) {
   }
 
   private def historyForLocation(location: Location, date: LocalDate, days: Int): Future[HistoryResponse] = {
-     def parseJson(s: String) = decode[HistoryResponse](s).right.get
+    def parseJson(s: String) = decode[HistoryResponse](s).right.get
 
     val query = s"lat=${location.lat}&lon=${location.lon}&date=${formatDate(date)}&days=$days"
     Ajax.get(s"$endpoint/history?$query")

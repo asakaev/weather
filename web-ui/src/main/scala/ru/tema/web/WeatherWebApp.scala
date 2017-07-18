@@ -1,6 +1,6 @@
 package ru.tema.web
 
-import java.time.{ LocalDate, ZonedDateTime }
+import java.time.LocalDate
 
 import org.scalajs.jquery.jQuery
 
