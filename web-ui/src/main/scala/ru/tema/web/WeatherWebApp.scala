@@ -29,7 +29,8 @@ object WeatherWebApp {
       citiesWithLocation <- weatherApiClient.locations(cities)
       results <- {
         jQuery("body").append(s"<p>$citiesWithLocation</p>")
-        weatherApiClient.history(citiesWithLocation.map(_.location), localDate, 1)
+        val locations = citiesWithLocation.map(_.location)
+        weatherApiClient.history(locations, localDate, 1)
       }
     } yield {
       jQuery("body").append(s"<p>$results</p>")
