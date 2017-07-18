@@ -1,3 +1,5 @@
+val circeVersion = "0.8.0"
+
 lazy val webUI = (project in file("web-ui"))
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -12,7 +14,9 @@ lazy val webUI = (project in file("web-ui"))
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1",
       "be.doeraene" %%% "scalajs-jquery" % "0.9.1",
-      "com.lihaoyi" %%% "upickle" % "0.4.4",
-      "org.scala-js" %%% "scalajs-java-time" % "0.2.2"
+      "org.scala-js" %%% "scalajs-java-time" % "0.2.2",
+      "io.circe" %%% "circe-core" % circeVersion,
+      "io.circe" %%% "circe-generic" % circeVersion,
+      "io.circe" %%% "circe-parser" % circeVersion
     )
   )

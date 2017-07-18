@@ -2,16 +2,18 @@ package ru.tema.web
 
 import java.time.LocalDate
 
+import io.circe.generic.auto._
+import io.circe.parser.decode
 import org.scalajs.dom.XMLHttpRequest
 import org.scalajs.dom.ext.Ajax
-import upickle.default.read
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+
 // TODO: domain model leak
 //case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
-case class DataPoint(temperature: Double) // Long type problem
+case class DataPoint(time: Long, temperature: Double) // Long type problem
 // hack
 
 // TODO: share
@@ -32,10 +34,13 @@ case class HistoryResponse(days: Seq[Day]) // POW! -> overallStats: DetailedStat
 class WeatherApiClient(endpoint: String) {
 
   def locations(cities: Seq[String]): Future[Seq[City]] = {
+    def parseJson(s: String) = decode[Seq[City]](s).right.get
+
     val query = cities.map(c => s"city=$c").mkString("&")
     Ajax.get(s"$endpoint/locations?$query")
       .map(validateResponse)
-      .map(res => read[Seq[City]](res.responseText))
+      .map(_.responseText)
+      .map(parseJson)
   }
 
   def history(locations: Seq[Location], date: LocalDate, days: Int): Future[Seq[HistoryResponse]] = {
@@ -44,6 +49,8 @@ class WeatherApiClient(endpoint: String) {
   }
 
   private def historyForLocation(location: Location, date: LocalDate, days: Int): Future[HistoryResponse] = {
+     def parseJson(s: String) = decode[HistoryResponse](s).right.get
+
     val query = s"lat=${location.lat}&lon=${location.lon}&date=${formatDate(date)}&days=$days"
     Ajax.get(s"$endpoint/history?$query")
       .map(validateResponse)
@@ -51,7 +58,8 @@ class WeatherApiClient(endpoint: String) {
         println(s"RESULT: ${res.responseText}")
         res
       })
-      .map(res => read[HistoryResponse](res.responseText))
+      .map(_.responseText)
+      .map(parseJson)
   }
 
   private def validateResponse(response: XMLHttpRequest): XMLHttpRequest = {
