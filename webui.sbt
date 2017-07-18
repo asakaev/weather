@@ -17,6 +17,7 @@ lazy val webUI = (project in file("web-ui"))
       "org.scala-js" %%% "scalajs-java-time" % "0.2.2",
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
-      "io.circe" %%% "circe-parser" % circeVersion
+      "io.circe" %%% "circe-parser" % circeVersion,
+      "org.singlespaced" %%% "scalajs-d3" % "0.3.4"
     )
   )
