@@ -2,7 +2,7 @@ package ru.tema.weather
 
 import java.time._
 
-import ru.tema.darksky.{ DarkSkyClient, DataPoint, Location, Response }
+import ru.tema.darksky._
 import ru.tema.stats.StatsCalc
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,13 +21,13 @@ case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
 case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
 
 
-class WeatherService(darkSkyClient: DarkSkyClient, statsCalc: StatsCalc) {
+class WeatherService(darkSky: DarkSkyService, statsCalc: StatsCalc) {
 
   def getHistory(location: Location, fromTime: LocalDate, days: Int): Future[HistoryResponse] = {
     val localDateTimes = localDateTimeSeq(fromTime, days)
     println(s"localDateTimes: $localDateTimes")
 
-    val futures = localDateTimes.map(ldt => darkSkyClient.history(location, ldt))
+    val futures = localDateTimes.map(ldt => darkSky.history(location, ldt))
     for {
       historyResponses <- Future.sequence(futures)
     } yield createResponse(historyResponses)

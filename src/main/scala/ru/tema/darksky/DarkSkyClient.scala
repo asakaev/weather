@@ -12,6 +12,7 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Random
 
 
 // domain model
@@ -36,16 +37,7 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 // connection pool to API w limit concurrent connections
 
 
-/**
-  * Dark Sky API (partially implemented)
-  */
-class DarkSkyClient(apiKey: String) extends JsonSupport {
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer() // TODO: as arguments?
-
-  private val endpoint = "https://api.darksky.net"
-  private val exclude = Seq("currently", "flags", "daily")
-  private val units = "si"
+trait DarkSkyService {
 
   /**
     * A Time Machine Request returns the observed (in the past) or forecasted (in the future)
@@ -55,13 +47,43 @@ class DarkSkyClient(apiKey: String) extends JsonSupport {
     * @param time UNIX time (timezone should be omitted to refer to local time for the location being requested)
     * @return
     */
-  def history(location: Location, time: LocalDateTime): Future[Response] = {
+  def history(location: Location, time: LocalDateTime): Future[Response]
+}
+
+
+class DarkSkyDummy extends DarkSkyService {
+  override def history(location: Location, time: LocalDateTime): Future[Response] = {
+    println(s"Dummy history for $location at $time")
+
+    def intUpTo24 = Math.abs(Random.nextLong) % 24
+
+    def toDataPoint(x: Int) =
+      DataPoint(x, intUpTo24, Random.nextLong, Random.nextLong, Random.nextLong)
+    val dataPoints = 1 to 24 map toDataPoint
+    Future.successful(Response(DataBlock(dataPoints), "Europe/Moscow"))
+  }
+}
+
+
+/**
+  * Dark Sky API (partially implemented)
+  */
+class DarkSkyClient(apiKey: String) extends DarkSkyService with JsonSupport {
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer() // TODO: as arguments?
+
+  private val endpoint = "https://api.darksky.net"
+  private val exclude = Seq("currently", "flags", "daily")
+  private val units = "si"
+
+
+  override def history(location: Location, time: LocalDateTime): Future[Response] = {
     val epochSecond = epochTime(time)
     println(s"epoch request: $epochSecond")
     val uri = createUri(location, epochSecond)
     for {
       response <- Http().singleRequest(HttpRequest(uri = uri))
-      historyResponse <- Unmarshal(response.entity).to[Response]
+      historyResponse <- Unmarshal(response.entity).to[Response] // TODO: json4s?
     } yield {
       require(historyResponse.hourly.data.length == 24, "should be 24 data points per day")
       historyResponse
