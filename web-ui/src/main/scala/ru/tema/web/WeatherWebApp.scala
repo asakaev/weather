@@ -58,6 +58,33 @@ object WeatherWebApp {
     }
   }
 
+  case class Zzz(
+    datesRange: js.Array[js.Date],
+    allDataPoints: Seq[DataPoint],
+    city1Points: js.Array[DataPoint], // hack
+    city2Points: js.Array[DataPoint] // hack
+  )
+
+  def prepareData(historyResponses: Seq[HistoryResponse]) = {
+    // for each
+    val city1 = historyResponses.head // TODO: warn
+    val city2 = historyResponses.last // TODO: warn
+
+    val dataPoints1: Seq[DataPoint] = city1.days.flatMap(_.dataPoints)
+    val dataPoints2: Seq[DataPoint] = city2.days.flatMap(_.dataPoints)
+
+    // calc scale
+    val allDataPoints = historyResponses.flatMap(_.days).flatMap(_.dataPoints)
+    val dates = allDataPoints.map(_.time)
+    println(s"dates: $dates")
+
+    val datesRange = Seq(dates.min, dates.max)
+      .map(_ * 1000)
+      .map(new js.Date(_))
+
+    Zzz(datesRange.toJSArray, allDataPoints, dataPoints1.toJSArray, dataPoints2.toJSArray)
+  }
+
   def drawD3(): Unit = {
 
     object margin {
@@ -113,25 +140,16 @@ object WeatherWebApp {
         println("------------------")
         println(historyResponses)
 
-        // for each
-        val city1 = historyResponses.head // TODO: warn
-        val city2 = historyResponses.last // TODO: warn
-
-        val dataPoints1: Seq[DataPoint] = city1.days.flatMap(_.dataPoints)
-        val dataPoints2: Seq[DataPoint] = city2.days.flatMap(_.dataPoints)
+        val preparedData = prepareData(historyResponses)
+        println(s"preparedData: $preparedData")
 
         // calc scale
-        val allDataPoints = historyResponses.flatMap(_.days).flatMap(_.dataPoints)
+        val allDataPoints = preparedData.allDataPoints
         val dates = allDataPoints.map(_.time)
         println(s"dates: $dates")
 
-        val datesRange = Seq(dates.min, dates.max)
-          .map(_ * 1000)
-          .map(new js.Date(_))
-          .toJSArray
-
-        println(s">>>>>>>> datesRange: $datesRange")
-        x.domain(datesRange)
+        println(s">>>>>>>> datesRange: ${preparedData.datesRange}")
+        x.domain(preparedData.datesRange)
 
         val temps = allDataPoints.map(_.temperature)
         val maxY = temps.max
@@ -143,13 +161,13 @@ object WeatherWebApp {
         // city 1
         svg.append("path")
           .attr("class", "line")
-          .datum(dataPoints1.toJSArray) // This is needed to reference the actual data
+          .datum(preparedData.city1Points) // This is needed to reference the actual data
           .attr("d", valueline)
 
         // city 2
         svg.append("path")
           .attr("class", "line")
-          .datum(dataPoints2.toJSArray)
+          .datum(preparedData.city2Points)
           .attr("d", valueline)
 
         // axes
