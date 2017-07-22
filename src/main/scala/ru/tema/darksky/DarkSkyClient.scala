@@ -54,14 +54,20 @@ trait DarkSkyService {
 class DarkSkyDummy extends DarkSkyService {
   override def history(location: Location, time: LocalDateTime): Future[Response] = {
     println(s"Dummy history for $location at $time")
+    def toDataPoint(x: Int) = DataPoint(
+      unixEpochDay(x),
+      intUpTo24,
+      Random.nextLong,
+      Random.nextLong,
+      Random.nextLong
+    )
 
-    def intUpTo24 = Math.abs(Random.nextLong) % 24
-
-    def toDataPoint(x: Int) =
-      DataPoint(x, intUpTo24, Random.nextLong, Random.nextLong, Random.nextLong)
-    val dataPoints = 1 to 24 map toDataPoint
+    val dataPoints = 0 until 24 map toDataPoint
     Future.successful(Response(DataBlock(dataPoints), "Europe/Moscow"))
   }
+
+  private def intUpTo24 = Math.abs(Random.nextLong) % 24
+  private def unixEpochDay(x: Int) = x * 24 * 60 * 60
 }
 
 
