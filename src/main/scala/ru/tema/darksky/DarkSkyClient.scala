@@ -12,7 +12,6 @@ import spray.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Random
 
 
 // domain model
@@ -35,34 +34,6 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 // system.terminate()
 // NOT 200 code from API handling
 // connection pool to API w limit concurrent connections
-
-
-trait DarkSkyService {
-
-  /**
-    * A Time Machine Request returns the observed (in the past) or forecasted (in the future)
-    * hour-by-hour weather and daily weather conditions for a particular date.
-    *
-    * @param location Latitude and longitude (in decimal degrees)
-    * @param time UNIX time (timezone should be omitted to refer to local time for the location being requested)
-    * @return
-    */
-  def history(location: Location, time: LocalDateTime): Future[Response]
-}
-
-
-class DarkSkyDummy extends DarkSkyService {
-  override def history(location: Location, time: LocalDateTime): Future[Response] = {
-    println(s"Dummy history for $location at $time")
-    def toDataPoint(x: Int) = DataPoint(unixEpochDay(x), tempRand, rand, rand, rand)
-    val dataPoints = 0 until 24 map toDataPoint
-    Future.successful(Response(DataBlock(dataPoints), "Europe/Moscow"))
-  }
-
-  private def tempRand = Math.abs(Random.nextLong) % 24
-  private def rand = Random.nextLong
-  private def unixEpochDay(x: Int) = x * 24 * 60 * 60
-}
 
 
 /**
