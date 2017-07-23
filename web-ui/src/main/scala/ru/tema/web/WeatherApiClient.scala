@@ -11,14 +11,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
-// TODO: domain model leak
+// TODO: darksky domain model leak
 case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
 
-// TODO: share
+// TODO: share w backend
 case class Location(lat: Double, lon: Double)
 case class City(title: String, location: Location)
 
-// TODO: share
+// TODO: share w backend
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)

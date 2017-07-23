@@ -1,5 +1,6 @@
 package ru.tema.web
 
+import org.scalajs.dom
 import org.scalajs.dom.EventTarget
 import org.singlespaced.d3js.Ops._
 import org.singlespaced.d3js.scale.Linear
@@ -27,11 +28,13 @@ object D3Graph {
     val left = 50
   }
 
-  val width = 640 - margin.left - margin.right
+  val windowWidth = dom.window.innerWidth - 30 // TODO: fix
+
+  val width = windowWidth - margin.left - margin.right
   val height = 270 - margin.top - margin.bottom
 
 
-  def plot(cityHistories: Seq[CityHistory]): Unit = {
+  def render(cityHistories: Seq[CityHistory]): Unit = {
     val x = d3.time.scale().range(Seq(0.0, width).toJSArray)
     val y = d3.scale.linear().range(Seq(height, 0.0).toJSArray)
 

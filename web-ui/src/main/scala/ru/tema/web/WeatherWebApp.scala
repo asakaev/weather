@@ -47,7 +47,9 @@ object WeatherWebApp {
 
     future.onComplete {
       case Failure(e) => println(e)
-      case Success(cityHistories) => D3Graph.plot(cityHistories)
+      case Success(cityHistories) =>
+        D3Graph.render(cityHistories)
+        StatsView.render(cityHistories)
     }
 
   }

@@ -13,8 +13,8 @@ object Application extends App {
   val host = conf.getString("web-server.host")
   val port = conf.getInt("web-server.port")
 
-//  val darkSkyClient = new DarkSkyClient(apiKey)
-  val darkSkyClient = new DarkSkyDummy
+  val darkSkyClient = new DarkSkyClient(apiKey)
+//  val darkSkyClient = new DarkSkyDummy
 
   val publicApi = new PublicApi(
     new WeatherService(darkSkyClient, StatsCalc),
