@@ -18,7 +18,7 @@ case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpee
 case class Location(lat: Double, lon: Double)
 case class City(title: String, location: Location)
 
-// TODO: share2
+// TODO: share
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
@@ -26,6 +26,10 @@ case class Day(dataPoints: Seq[DataPoint], dayStats: DayStats) // zonedDateTime:
 
 case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
 case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
+
+
+// model
+case class CityHistory(city: City, historyResponse: HistoryResponse)
 
 
 class WeatherApiClient(endpoint: String) {
@@ -40,8 +44,10 @@ class WeatherApiClient(endpoint: String) {
       .map(parseJson)
   }
 
-  def history(locations: Seq[Location], date: LocalDate, days: Int): Future[Seq[HistoryResponse]] = {
-    val futures = locations.map(l => historyForLocation(l, date, days))
+  def history(cities: Seq[City], date: LocalDate, days: Int): Future[Seq[CityHistory]] = {
+    val futures = cities.map(city => {
+      historyForLocation(city.location, date, days).map(CityHistory(city, _))
+    })
     Future.sequence(futures)
   }
 
