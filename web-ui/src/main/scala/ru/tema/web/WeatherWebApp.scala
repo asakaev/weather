@@ -1,7 +1,6 @@
 package ru.tema.web
 
-import java.time.LocalDate
-
+import com.zoepepper.facades.jsjoda.LocalDate
 import org.scalajs.jquery.jQuery
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,32 +14,15 @@ object WeatherWebApp {
 
   // TODO: hardcode
   private val cities = Seq("Saint-Petersburg", "Moscow")
-  private val localDate = LocalDate.of(2017, 6, 16)
-
+  private val date = LocalDate.now().minusDays(1)
+  private val days = 2
 
   def setupUI(): Unit = {
     jQuery("body").append(s"<p>Cities: ${cities.mkString(", ")}</p>")
-    jQuery("body").append(s"<p>Date: $localDate</p>")
-    onUIready()
-  }
-
-  def handleResults(results: Seq[HistoryResponse]): Unit = {
-    val day1 = results.head.days.flatMap(_.dataPoints)
-    val day2 = results.last.days.flatMap(_.dataPoints)
-    jQuery("body").append(s"<p>Day1: $day1</p>")
-    jQuery("body").append(s"<p>Day2: $day2</p>")
-    Unit
-  }
-
-  def onUIready(): Unit = {
-
-    // TODO: hardcode
-    val citiesNames = Seq("Moscow", "Saint-Petersburg")
-    val date = LocalDate.of(2017, 6, 17)
-    val days = 1
+    jQuery("body").append(s"<p>Date: $date</p>")
 
     val future = for {
-      cities <- weatherApiClient.locations(citiesNames)
+      cities <- weatherApiClient.locations(cities)
       cityHistories <- weatherApiClient.history(cities, date, days)
 
     } yield cityHistories
@@ -48,10 +30,10 @@ object WeatherWebApp {
     future.onComplete {
       case Failure(e) => println(e)
       case Success(cityHistories) =>
-        D3Graph.render(cityHistories)
-        StatsView.render(cityHistories)
+        val reversed = cityHistories.reverse // TODO: fix order
+        D3Graph.render(reversed)
+        StatsView.render(reversed)
     }
-
   }
 
 

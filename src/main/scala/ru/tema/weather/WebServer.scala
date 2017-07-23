@@ -1,5 +1,8 @@
 package ru.tema.weather
 
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -14,10 +17,19 @@ import ru.tema.darksky.Location
 import scala.util.{ Failure, Success }
 
 
+// a custom serializer has two partial functions, one
+// for serializing and one for deserializing
+case object ZDTSerializer extends CustomSerializer[ZonedDateTime](_ => ( {
+  case JString(s) => ZonedDateTime.parse(s)
+}, {
+  case zdt: ZonedDateTime => JString(zdt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+}))
+
+
 class WebServer(host: String, port: Int, publicApi: PublicApi) {
   implicit val system = ActorSystem("my-system")
   implicit val materializer = ActorMaterializer()
-  implicit val formats = DefaultFormats
+  implicit val formats = DefaultFormats + ZDTSerializer
 
 
   val locations: Route =

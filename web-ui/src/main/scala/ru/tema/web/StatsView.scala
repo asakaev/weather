@@ -16,8 +16,7 @@ object StatsView {
   }
 
   private def appendDay(day: Day, parent: JQuery) = {
-    val date = "fake date" // TODO: fix DAY date from server
-    parent.append(s"<h3>Date: $date</h3>")
+    parent.append(s"<h3>Date: ${day.zonedDateTime}</h3>")
 
     val tables = Seq(
       detailedStatsTable(day.dayStats.day, "Day (6AM to 6PM)"),
@@ -64,10 +63,12 @@ object StatsView {
   }
 
   private def appendCity(cityName: String, days: Seq[Day]) = {
-    val div = jQuery("<div></div>")
-    jQuery("body").append(div)
-    div.append(s"<h2>City: $cityName</h2>")
-    days.foreach(appendDay(_, div))
+    val cityContainer = jQuery("<div class='city'></div>")
+    jQuery("body").append(cityContainer)
+    cityContainer.append(s"<h2>$cityName</h2>")
+    val statsContainer = jQuery("<div class='stats'></div>")
+    cityContainer.append(statsContainer)
+    days.foreach(appendDay(_, statsContainer))
   }
 
   private def round(x: Double, scale: Int) =

@@ -13,8 +13,6 @@ case class City(title: String, location: Location)
 
 
 class PublicApi(weatherService: WeatherService, repo: CitiesRepo) {
-  private val inputPattern = "dd-MM-yyyy"
-  private val inputFormatter = DateTimeFormatter.ofPattern(inputPattern)
 
   def locations(cities: Seq[String]): Future[Seq[City]] = {
     def toCity(title: String) = repo.location(title).map(_.map(loc => City(title, loc)))
@@ -23,10 +21,9 @@ class PublicApi(weatherService: WeatherService, repo: CitiesRepo) {
   }
 
   def history(location: Location, date: String, days: Int): Future[HistoryResponse] = {
-    val localDate = parseTime(date)
+    val localDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE) // TODO: unsafe
     println(s"parsed local date: $localDate")
     weatherService.getHistory(location, localDate, days)
   }
 
-  private def parseTime(input: String) = LocalDate.parse(input, inputFormatter)
 }

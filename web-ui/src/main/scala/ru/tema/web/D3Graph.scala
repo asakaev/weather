@@ -42,8 +42,8 @@ object D3Graph {
     val yAxis = d3.svg.axis().scale(y).orient("left").ticks(5)
 
     val valueLine = d3.svg.line[TempPoint]()
-      .x { tp: TempPoint => x(unixEpochtoJsDate(tp.time)) }
-      .y { tp: TempPoint => y(tp.temp) }
+      .x((tp: TempPoint) => x(unixEpochtoJsDate(tp.time)))
+      .y((tp: TempPoint) => y(tp.temp))
 
     val svg = d3.select("body")
       .append("svg")

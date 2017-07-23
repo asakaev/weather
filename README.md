@@ -8,3 +8,8 @@ Location(59.8944444, 30.2641667) - Saint-Petersburg
 curl http://localhost:8080/locations?city=Saint-Petersburg&city=Moscow
 curl http://localhost:8080/history?lat=59.8944444&lon=30.2641667&date=27-06-2017&days=2
 ```
+
+
+### TODO
+1. Remove libs types from webserver API
+2. Share API types server/client

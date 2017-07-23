@@ -1,7 +1,8 @@
 package ru.tema.web
 
-import java.time.LocalDate
-
+import com.zoepepper.facades.jsjoda.format.DateTimeFormatter
+import com.zoepepper.facades.jsjoda.{ LocalDate, ZonedDateTime }
+import io.circe.Decoder
 import io.circe.generic.auto._
 import io.circe.parser.decode
 import org.scalajs.dom.XMLHttpRequest
@@ -22,17 +23,22 @@ case class City(title: String, location: Location)
 case class Stats(standardDeviation: Double, median: Double, min: Double, max: Double)
 case class DetailedStats(temp: Stats, humidity: Stats, windStrength: Stats, windBearing: Stats)
 case class DayStats(twentyFourHours: DetailedStats, day: DetailedStats, night: DetailedStats)
-case class Day(dataPoints: Seq[DataPoint], dayStats: DayStats) // zonedDateTime: ZonedDateTime
+case class Day(zonedDateTime: ZonedDateTime, dataPoints: Seq[DataPoint], dayStats: DayStats)
 
 case class DayNightHours(dayHours: Seq[DataPoint], nightHours: Seq[DataPoint])
 case class HistoryResponse(days: Seq[Day], overallStats: DetailedStats)
-
 
 // model
 case class CityHistory(city: City, historyResponse: HistoryResponse)
 
 
 class WeatherApiClient(endpoint: String) {
+
+  implicit val decodeZdt: Decoder[ZonedDateTime] = Decoder.decodeString.emap { str =>
+    val zdt = ZonedDateTime.parse(str, DateTimeFormatter.ISO_OFFSET_DATE_TIME) // TODO: unsafe
+    Right(zdt)
+  }
+
 
   def locations(cities: Seq[String]): Future[Seq[City]] = {
     def parseJson(s: String) = decode[Seq[City]](s).right.get
@@ -54,7 +60,8 @@ class WeatherApiClient(endpoint: String) {
   private def historyForLocation(location: Location, date: LocalDate, days: Int): Future[HistoryResponse] = {
     def parseJson(s: String) = decode[HistoryResponse](s).right.get
 
-    val query = s"lat=${location.lat}&lon=${location.lon}&date=${formatDate(date)}&days=$days"
+    val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    val query = s"lat=${location.lat}&lon=${location.lon}&date=$dateStr&days=$days"
     Ajax.get(s"$endpoint/history?$query")
       .map(validateResponse)
       .map(_.responseText)
@@ -69,9 +76,4 @@ class WeatherApiClient(endpoint: String) {
     }
   }
 
-  // DateTimeFormatter doesn't work in Scala.js: "dd-MM-yyyy"
-  private def formatDate(date: LocalDate): String = {
-    val split = date.toString.split("-")
-    s"${split(2)}-${split(1)}-${split(0)}"
-  }
 }
