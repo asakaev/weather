@@ -7,7 +7,8 @@ HTTP API and Web application with UI to check weather history.
 
 ### Run Webserver
 ```
-???
+sbt docker (if not build image before)
+docker run -p 8080:8080 weather/weather
 ```
 
 ### WebApp usage
@@ -42,19 +43,30 @@ project webUI
 sbt run
 ```
 
+
+### Server build
+```
+sbt docker
+```
+
 ### WebApp build
-1. `fullOptJS`
-2. copy `webui-opt.js`
+1. Build JS using `fullOptJS`
+2. Copy `webui-opt.js`, `webui-jsdeps.js` to `bin`
 
 
 ### TODO
+* Unit tests BE
+* Stats bugfixes
+* DarkSky service HTTP fixed size connection pool (5 persistent tcp connections?)
 * Remove bin from repo
-* JS build as App
+* Cleanup index.html from CSS
+* Replace DOM/JQuery with React
+* Logging, get rid of print lines
 * Build docker image with run end expose (plugin)
 * Do not use external types in Weather service
-* Share Weather service API types
-* PublicApi response/errors docs with json examples
+* Share Weather service model (API) with server and client
+* Public Api response/errors documentation with json examples
 * OpenAPI (Swagger) spec and Scala codegen?
 * .js pipeline as standalone HTML+CSS+JS app
-* Rename code entities to *timemachine related
+* Rename code entities to *timemachine related things
 * Simplify client/server interaction: Service abstraction (Finagle inspired)
