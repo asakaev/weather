@@ -10,7 +10,7 @@ lazy val webUI = (project in file("web-ui"))
     skip in packageJSDependencies := false,
     jsDependencies ++= Seq(
       "org.webjars" % "jquery" % "2.1.4" / "2.1.4/jquery.js",
-      "org.webjars.npm" % "js-joda" % "1.3.0" / "dist/js-joda.js" minified "dist/js-joda.min.js"
+      "org.webjars.npm" % "js-joda" % "1.5.1" / "dist/js-joda.js" minified "dist/js-joda.min.js"
     ),
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "0.9.1",
