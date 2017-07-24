@@ -15,7 +15,7 @@ object WeatherWebApp {
   // TODO: hardcode
   private val cities = Seq("Saint-Petersburg", "Moscow")
   private val date = LocalDate.now().minusDays(1)
-  private val days = 2
+  private val days = 7
 
   def setupUI(): Unit = {
     jQuery("body").append(s"<p>Cities: ${cities.mkString(", ")}</p>")
