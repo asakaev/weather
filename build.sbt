@@ -1,4 +1,5 @@
 lazy val weather = (project in file("."))
+  .enablePlugins(DockerPlugin)
   .settings(
     name := "Weather",
     scalaVersion := "2.12.2",
@@ -10,5 +11,6 @@ lazy val weather = (project in file("."))
       "org.scalatest" %% "scalatest" % "3.0.1" % "test",
       "ch.megard" %% "akka-http-cors" % "0.2.1",
       "org.json4s" %% "json4s-native" % "3.5.2"
-    )
+    ),
+    dockerAutoPackageJavaApplication("openjdk:8-jre-alpine", Seq(8080))
   )
