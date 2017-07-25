@@ -1,5 +1,7 @@
 package ru.tema.darksky
 
+import java.time.{ LocalDateTime, ZoneOffset, ZonedDateTime }
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
@@ -13,17 +15,17 @@ import scala.concurrent.Future
 
 
 // domain model
-case class Observation(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
-case class Hourly(data: Seq[Observation])
-case class HistoryResponse(hourly: Hourly)
+case class DataPoint(time: Long, temperature: Double, humidity: Double, windSpeed: Double, windBearing: Double)
+case class DataBlock(data: Seq[DataPoint]) // 00:00 to 23:00
+case class Response(hourly: DataBlock, timezone: String)
 
 case class Location(lat: Double, lon: Double)
 
 
 trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val observation = jsonFormat5(Observation)
-  implicit val hourly = jsonFormat1(Hourly)
-  implicit val historyResponse = jsonFormat1(HistoryResponse)
+  implicit val dataPoint5 = jsonFormat5(DataPoint)
+  implicit val dataBlock1 = jsonFormat1(DataBlock)
+  implicit val response2 = jsonFormat2(Response)
 }
 
 
@@ -37,28 +39,38 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 /**
   * Dark Sky API (partially implemented)
   */
-class DarkSkyClient(apiKey: String) extends JsonSupport {
+class DarkSkyClient(apiKey: String) extends DarkSkyService with JsonSupport {
   implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer() // TODO: as arguments?
 
   private val endpoint = "https://api.darksky.net"
   private val exclude = Seq("currently", "flags", "daily")
   private val units = "si"
 
-  /**
-    * A Time Machine Request returns the observed (in the past) or forecasted (in the future)
-    * hour-by-hour weather and daily weather conditions for a particular date.
-    */
-  def history(location: Location, time: Long): Future[HistoryResponse] = {
-    val uri = createUri(location, time)
+
+  override def history(location: Location, time: LocalDateTime): Future[Response] = {
+    val epochSecond = epochTime(time)
+    println(s"epoch request: $epochSecond")
+    val uri = createUri(location, epochSecond)
     for {
       response <- Http().singleRequest(HttpRequest(uri = uri))
-      historyResponse <- Unmarshal(response.entity).to[HistoryResponse]
-    } yield historyResponse
+      historyResponse <- Unmarshal(response.entity).to[Response] // TODO: json4s?
+    } yield {
+      require(historyResponse.hourly.data.length == 24, "should be 24 data points per day")
+      historyResponse
+    }
   }
 
-  private def createUri(location: Location, time: Long) = {
-    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$time" +
+  private def createUri(location: Location, epochSecond: Long) = {
+    s"$endpoint/forecast/$apiKey/${location.lat},${location.lon},$epochSecond" +
       s"?exclude=${exclude.mkString(",")}&units=$units"
+  }
+
+  /**
+    * The timezone is only used for determining the time of the request;
+    * the response will always be relative to the local time zone.
+    */
+  private def epochTime(time: LocalDateTime): Long = {
+    ZonedDateTime.of(time, ZoneOffset.UTC).toEpochSecond
   }
 }
