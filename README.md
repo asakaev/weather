@@ -5,19 +5,21 @@
 HTTP API and Web application with UI to check weather history.
 
 
+### Service build
+```
+sbt docker
+```
+
 ### Run Webserver
 ```
-sbt docker (if not build image before)
 docker run -p 8080:8080 weather/weather
 ```
 
 ### WebApp usage
-1. Run any http static server from `weather/web-ui/bin` dir
+1. Run static http server from project dir
 2. Open `http://localhost:8000/` in browser
 ```
-python -m SimpleHTTPServer 8000
-php -S 127.0.0.1:8000
-ruby -run -ehttpd . -p8000
+docker run -p 8000:80 -v "$PWD/web-ui/bin":/usr/local/apache2/htdocs/ httpd:2.4-alpine
 ```
 
 
@@ -44,12 +46,7 @@ sbt run
 ```
 
 
-### Server build
-```
-sbt docker
-```
-
-### WebApp build
+### WebApp build (WIP)
 1. Build JS using `fullOptJS`
 2. Copy `webui-opt.js`, `webui-jsdeps.js` to `bin`
 
